@@ -41,6 +41,7 @@ public class CustomBall extends View {
     private Path path = new Path();
     private SingleTapThread singleTapThread;
     private GestureDetector detector;
+    private int space=30;
 
     public CustomBall(Context context) {
         this(context, null);
@@ -143,16 +144,16 @@ public class CustomBall extends View {
         bitmapCanvas.drawCircle(width / 2, height / 2, radius, roundPaint);
 
         path.reset();
-        float y = (1 - (float) progress / maxProgress) * radius * 2 + height / 2 - radius;
+        float y = (1 - (float) currentProgress / maxProgress) * radius * 2 + height / 2 - radius;
         path.moveTo(width, y);
         path.lineTo(width, height);
         path.lineTo(0, height);
         path.lineTo(0, y);
-        int space = 30;
         int count = (int) (radius + 1) * 2 / space;
+        float d = (1 - (float) currentProgress / maxProgress) *space;
         for (int i = 0; i < count; i++) {
-            path.rQuadTo(space, -space, space * 2, 0);
-            path.rQuadTo(space, space, space * 2, 0);
+            path.rQuadTo(space, -d, space * 2, 0);
+            path.rQuadTo(space, d, space * 2, 0);
         }
         path.close();
         bitmapCanvas.drawPath(path, progressPaint);
@@ -164,12 +165,6 @@ public class CustomBall extends View {
         float y1 = height / 2 + dy;
         bitmapCanvas.drawText(text, x, y1, fontPaint);
         canvas.drawBitmap(bitmap, 0, 0, null);
-/*        float textWidth = fontPaint.measureText(centerText);
-        float x = width / 2 - textWidth / 2;
-        Paint.FontMetrics fontMetrics = fontPaint.getFontMetrics();
-        float dy = -(fontMetrics.descent + fontMetrics.ascent) / 2;
-        float y = height / 2 + dy;
-        canvas.drawText(centerText, x, y, fontPaint);*/
         setClickable(true);
         if (detector==null){
             detector = new GestureDetector(new MyGestureDetector());
