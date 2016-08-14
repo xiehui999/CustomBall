@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="customBallView">
+        <attr name="centerText" format="string"></attr>
+        <attr name="centerTextSize" format="dimension"></attr>
+        <attr name="centerTextColor" format="color"></attr>
+        <attr name="ballColor" format="color"></attr>
+        <attr name="progressColor" format="color"></attr>
+        <attr name="ballRadius" format="dimension"></attr>
+    </declare-styleable>
+</resources>

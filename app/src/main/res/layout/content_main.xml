@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:customBallView="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.xh.customball.MainActivity"
+    customBallView:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:showIn="@layout/activity_main">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!" />
+
+    <com.example.xh.customball.CustomBall
+        android:background="@color/colorPrimary"
+        android:layout_gravity="center"
+        customBallView:centerText="30%"
+        customBallView:centerTextSize="28dp"
+        customBallView:centerTextColor="#000000"
+        customBallView:ballColor="@color/colorAccent"
+        customBallView:progressColor="@color/ballColor"
+        customBallView:ballRadius="160dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+    </com.example.xh.customball.CustomBall>
+</LinearLayout>
