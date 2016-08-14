@@ -2,10 +2,17 @@ package com.example.xh.customball;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.support.design.widget.Snackbar;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 
 /**
@@ -19,11 +26,21 @@ public class CustomBall extends View {
     private int windowHeight;
     private Paint roundPaint;
     private Paint fontPaint;
+    private Paint progressPaint;
     private String centerText = "";
     private int centerTextColor;
     private float centerTextSize;
     private int ballColor;
+    private int progressColor;
+    private int progress = 50;
+    private int currentProgress = 0;
+    private int maxProgress = 100;
     private float radius;
+    private Bitmap bitmap;
+    private Canvas bitmapCanvas;
+    private Path path = new Path();
+    private SingleTapThread singleTapThread;
+    private GestureDetector detector;
 
     public CustomBall(Context context) {
         this(context, null);
@@ -56,7 +73,8 @@ public class CustomBall extends View {
         Log.e("TAG", "centerText" + centerText);
         centerTextSize = typedArray.getDimension(R.styleable.customBallView_centerTextSize, 24f);
         centerTextColor = typedArray.getColor(R.styleable.customBallView_centerTextColor, 0xFFFFFF);
-        ballColor = typedArray.getColor(R.styleable.customBallView_ballColor, 0xFF4081);
+        ballColor = typedArray.getColor(R.styleable.customBallView_ballColor, 0x3A8C6C);
+        progressColor = typedArray.getColor(R.styleable.customBallView_progressColor, 0x00ff00);
         radius = typedArray.getDimension(R.styleable.customBallView_ballRadius, 260f);
         radius = Math.min(Math.min(windowWidth / 2, windowHeight / 2), radius);
         typedArray.recycle();
@@ -71,11 +89,22 @@ public class CustomBall extends View {
         roundPaint.setColor(ballColor);
         roundPaint.setAntiAlias(true);
         fontPaint = new Paint();
+
+        progressPaint = new Paint();
+        progressPaint.setAntiAlias(true);
+        progressPaint.setColor(progressColor);
+        //取两层绘制交集。显示上层
+        progressPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+
+
         fontPaint.setTextSize(centerTextSize);
         fontPaint.setColor(centerTextColor);
         fontPaint.setAntiAlias(true);
         fontPaint.setFakeBoldText(true);
 
+        bitmap = Bitmap.createBitmap((int) radius * 2, (int) radius * 2, Bitmap.Config.ARGB_8888);
+
+        bitmapCanvas = new Canvas(bitmap);
     }
 
     @Override
@@ -86,24 +115,24 @@ public class CustomBall extends View {
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
         int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
-        int width;
-        int height;
+        int w;
+        int h;
         if (widthMode == MeasureSpec.EXACTLY) {
-            width=widthSize;
+            w = widthSize;
         } else if (widthMode == MeasureSpec.AT_MOST) {
-            width=(int)Math.min(widthSize,radius*2);
+            w = (int) Math.min(widthSize, radius * 2);
         } else {
 
-            width=windowWidth;
+            w = windowWidth;
         }
         if (heightMode == MeasureSpec.EXACTLY) {
-            height=heightSize;
+            h = heightSize;
         } else if (heightMode == MeasureSpec.AT_MOST) {
-            height=(int)Math.min(heightSize,radius*2);
+            h = (int) Math.min(heightSize, radius * 2);
         } else {
-            height=windowHeight;
+            h = windowHeight;
         }
-        setMeasuredDimension(width,height);
+        setMeasuredDimension(w, h);
     }
 
 
@@ -111,15 +140,92 @@ public class CustomBall extends View {
     protected void onDraw(Canvas canvas) {
         width = getWidth();
         height = getHeight();
-        canvas.drawCircle(width / 2, height / 2, radius, roundPaint);
+        bitmapCanvas.drawCircle(width / 2, height / 2, radius, roundPaint);
+
+        path.reset();
+        float y = (1 - (float) progress / maxProgress) * radius * 2 + height / 2 - radius;
+        path.moveTo(width, y);
+        path.lineTo(width, height);
+        path.lineTo(0, height);
+        path.lineTo(0, y);
+        int space = 30;
+        int count = (int) (radius + 1) * 2 / space;
+        for (int i = 0; i < count; i++) {
+            path.rQuadTo(space, -space, space * 2, 0);
+            path.rQuadTo(space, space, space * 2, 0);
+        }
+        path.close();
+        bitmapCanvas.drawPath(path, progressPaint);
+        String text = currentProgress + "%";
         float textWidth = fontPaint.measureText(centerText);
+        Paint.FontMetrics fontMetrics = fontPaint.getFontMetrics();
+        float x = width / 2 - textWidth / 2;
+        float dy = -(fontMetrics.descent + fontMetrics.ascent) / 2;
+        float y1 = height / 2 + dy;
+        bitmapCanvas.drawText(text, x, y1, fontPaint);
+        canvas.drawBitmap(bitmap, 0, 0, null);
+/*        float textWidth = fontPaint.measureText(centerText);
         float x = width / 2 - textWidth / 2;
         Paint.FontMetrics fontMetrics = fontPaint.getFontMetrics();
         float dy = -(fontMetrics.descent + fontMetrics.ascent) / 2;
         float y = height / 2 + dy;
-        canvas.drawText(centerText, x, y, fontPaint);
+        canvas.drawText(centerText, x, y, fontPaint);*/
+        setClickable(true);
+        if (detector==null){
+            detector = new GestureDetector(new MyGestureDetector());
+            setOnTouchListener(new OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return detector.onTouchEvent(event);
+                }
+            });
 
+        }
 
     }
 
+
+    public class MyGestureDetector extends GestureDetector.SimpleOnGestureListener {
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            getHandler().removeCallbacks(singleTapThread);
+            singleTapThread=null;
+            Snackbar.make(CustomBall.this, "暂停进度，是否重置进度？", Snackbar.LENGTH_LONG).setAction("重置", new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    currentProgress=0;
+                    invalidate();
+                }
+            }).show();
+            return super.onDoubleTap(e);
+        }
+
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            Snackbar.make(CustomBall.this, "单机了", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+            startProgressAnimation();
+            return super.onSingleTapConfirmed(e);
+        }
+    }
+
+    private void startProgressAnimation() {
+        if (singleTapThread == null) {
+            singleTapThread = new SingleTapThread();
+            getHandler().postDelayed(singleTapThread, 100);
+        }
+    }
+
+    private class SingleTapThread implements Runnable {
+        @Override
+        public void run() {
+            if (currentProgress < maxProgress) {
+                invalidate();
+                getHandler().postDelayed(singleTapThread, 100);
+                currentProgress++;
+            } else {
+                getHandler().removeCallbacks(singleTapThread);
+            }
+        }
+    }
 }
