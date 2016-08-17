@@ -42,7 +42,7 @@ public class CustomBall extends View {
     private SingleTapThread singleTapThread;
     private GestureDetector detector;
     private int space=30;
-
+    private int move=0;
     public CustomBall(Context context) {
         this(context, null);
     }
@@ -144,17 +144,22 @@ public class CustomBall extends View {
         bitmapCanvas.drawCircle(width / 2, height / 2, radius, roundPaint);
 
         path.reset();
-        float y = (1 - (float) currentProgress / maxProgress) * radius * 2 + height / 2 - radius;
-        path.moveTo(width, y);
-        path.lineTo(width, height);
-        path.lineTo(0, height);
-        path.lineTo(0, y);
         int count = (int) (radius + 1) * 2 / space;
+        float y = (1 - (float) currentProgress / maxProgress) * radius * 2 + height / 2 - radius;
+        move+=20;
+        if (move>width)
+        {
+            move=width;
+        }
+        path.moveTo(-width+y, y);
         float d = (1 - (float) currentProgress / maxProgress) *space;
         for (int i = 0; i < count; i++) {
             path.rQuadTo(space, -d, space * 2, 0);
             path.rQuadTo(space, d, space * 2, 0);
         }
+        path.lineTo(width, y);
+        path.lineTo(width, height);
+        path.lineTo(0, height);
         path.close();
         bitmapCanvas.drawPath(path, progressPaint);
         String text = currentProgress + "%";
